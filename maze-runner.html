@@ -403,22 +403,26 @@
       const filtered = options.filter(d => !(d.x === reverse.x && d.y === reverse.y));
       const choices = filtered.length ? filtered : options;
 
-      // Only allow direction changes at corners, dead ends, and intersections.
-      // This means we only turn if there are 2 or more non-reverse valid directions.
-      if (choices.length < 2) return;
-
-      // A little chase behavior when not in power mode.
-      if (!isPowerMode() && Math.random() < 0.45) {
-        choices.sort((a, b) => {
-          const ax = ghost.x + a.x * tile - player.x;
-          const ay = ghost.y + a.y * tile - player.y;
-          const bx = ghost.x + b.x * tile - player.x;
-          const by = ghost.y + b.y * tile - player.y;
-          return (ax * ax + ay * ay) - (bx * bx + by * by);
-        });
-        ghost.dir = choices[0];
-      } else {
-        ghost.dir = choices[Math.floor(Math.random() * choices.length)];
+      // Only turn at corners, dead ends, and intersections (2+ valid non-reverse directions)
+      // But if there's only 1 direction available and we must move, choose it
+      if (choices.length < 2 && filtered.length === 0) {
+        // Dead end: choose the reverse direction
+        ghost.dir = options[0];
+      } else if (choices.length >= 2) {
+        // Corner or intersection: choose a direction
+        // A little chase behavior when not in power mode.
+        if (!isPowerMode() && Math.random() < 0.45) {
+          choices.sort((a, b) => {
+            const ax = ghost.x + a.x * tile - player.x;
+            const ay = ghost.y + a.y * tile - player.y;
+            const bx = ghost.x + b.x * tile - player.x;
+            const by = ghost.y + b.y * tile - player.y;
+            return (ax * ax + ay * ay) - (bx * bx + by * by);
+          });
+          ghost.dir = choices[0];
+        } else {
+          ghost.dir = choices[Math.floor(Math.random() * choices.length)];
+        }
       }
     }
 
