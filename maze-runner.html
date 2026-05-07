@@ -358,11 +358,11 @@
     }
 
     function moveGhost(ghost, speed) {
-      // Only allow ghosts to move in cardinal directions
+      // Move in current direction, snapping to center when nearby
       if (canMove(ghost, ghost.dir, speed)) {
         ghost.x += ghost.dir.x * speed;
         ghost.y += ghost.dir.y * speed;
-        // Snap to tile center when close enough (keeps ghosts aligned to grid)
+        // Snap to tile center when close enough
         const pos = tileAt(ghost.x, ghost.y);
         const center = centerOf(pos.col, pos.row);
         const distToCenter = Math.hypot(ghost.x - center.x, ghost.y - center.y);
@@ -371,7 +371,7 @@
           ghost.y = center.y;
         }
       } else {
-        // If blocked, snap to current tile center and stop
+        // Blocked - snap to current tile center
         const pos = tileAt(ghost.x, ghost.y);
         const center = centerOf(pos.col, pos.row);
         ghost.x = center.x;
@@ -392,7 +392,7 @@
       // Only consider turning when at a tile center
       if (!nearCenter) return;
 
-      // Snap to center to ensure alignment
+      // Snap to center
       ghost.x = center.x;
       ghost.y = center.y;
 
@@ -404,13 +404,8 @@
       const choices = filtered.length ? filtered : options;
 
       // Only turn at corners, dead ends, and intersections (2+ valid non-reverse directions)
-      // But if there's only 1 direction available and we must move, choose it
-      if (choices.length < 2 && filtered.length === 0) {
-        // Dead end: choose the reverse direction
-        ghost.dir = options[0];
-      } else if (choices.length >= 2) {
+      if (choices.length >= 2) {
         // Corner or intersection: choose a direction
-        // A little chase behavior when not in power mode.
         if (!isPowerMode() && Math.random() < 0.45) {
           choices.sort((a, b) => {
             const ax = ghost.x + a.x * tile - player.x;
@@ -423,6 +418,9 @@
         } else {
           ghost.dir = choices[Math.floor(Math.random() * choices.length)];
         }
+      } else if (filtered.length === 0 && options.length > 0) {
+        // Dead end: reverse direction
+        ghost.dir = options[0];
       }
     }
 
@@ -646,8 +644,8 @@
       if (!gameOver) {
         moveEntity(player, PLAYER_SPEED);
         ghosts.forEach(ghost => {
-          maybeTurnGhost(ghost);
           moveGhost(ghost, GHOST_SPEED + Math.min(level - 1, 4) * 0.25);
+          maybeTurnGhost(ghost);
         });
         eatDots();
         checkGhostCollisions();
