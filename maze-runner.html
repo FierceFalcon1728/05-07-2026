@@ -386,6 +386,10 @@
       const filtered = options.filter(d => !(d.x === reverse.x && d.y === reverse.y));
       const choices = filtered.length ? filtered : options;
 
+      // Only allow direction changes at corners, dead ends, and intersections.
+      // This means we only turn if there are 2 or more non-reverse valid directions.
+      if (choices.length < 2) return;
+
       // A little chase behavior when not in power mode.
       if (!isPowerMode() && Math.random() < 0.45) {
         choices.sort((a, b) => {
