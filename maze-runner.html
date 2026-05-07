@@ -357,29 +357,46 @@
       }
     }
 
+    function moveGhost(ghost, speed) {
+      // Only allow ghosts to move in cardinal directions
+      if (canMove(ghost, ghost.dir, speed)) {
+        ghost.x += ghost.dir.x * speed;
+        ghost.y += ghost.dir.y * speed;
+        // Snap to tile center when close enough (keeps ghosts aligned to grid)
+        const pos = tileAt(ghost.x, ghost.y);
+        const center = centerOf(pos.col, pos.row);
+        const distToCenter = Math.hypot(ghost.x - center.x, ghost.y - center.y);
+        if (distToCenter < 2) {
+          ghost.x = center.x;
+          ghost.y = center.y;
+        }
+      } else {
+        // If blocked, snap to current tile center and stop
+        const pos = tileAt(ghost.x, ghost.y);
+        const center = centerOf(pos.col, pos.row);
+        ghost.x = center.x;
+        ghost.y = center.y;
+      }
+    }
+
     function randomDir() {
       const keys = Object.keys(dirs);
       return dirs[keys[Math.floor(Math.random() * keys.length)]];
     }
 
     function maybeTurnGhost(ghost) {
-      const nearCenterX = Math.abs((ghost.x % tile) - tile / 2) < GHOST_SPEED + 1;
-      const nearCenterY = Math.abs((ghost.y % tile) - tile / 2) < GHOST_SPEED + 1;
-      const blocked = !canMove(ghost, ghost.dir, GHOST_SPEED);
+      const pos = tileAt(ghost.x, ghost.y);
+      const center = centerOf(pos.col, pos.row);
+      const nearCenter = Math.hypot(ghost.x - center.x, ghost.y - center.y) < 2;
 
-      // If the ghost is blocked, snap it back to the center of its current tile.
-      // This prevents it from getting stuck slightly inside a wall edge.
-      if (blocked) {
-        const pos = tileAt(ghost.x, ghost.y);
-        const center = centerOf(pos.col, pos.row);
-        ghost.x = center.x;
-        ghost.y = center.y;
-      }
+      // Only consider turning when at a tile center
+      if (!nearCenter) return;
 
-      // Only choose a new turn when near a tile center or when blocked.
-      if (!blocked && (!nearCenterX || !nearCenterY)) return;
+      // Snap to center to ensure alignment
+      ghost.x = center.x;
+      ghost.y = center.y;
 
-      const options = Object.values(dirs).filter(d => canMove(ghost, d, GHOST_SPEED));
+      const options = Object.values(dirs).filter(d => canMove(ghost, d, 1));
       if (options.length === 0) return;
 
       const reverse = { x: -ghost.dir.x, y: -ghost.dir.y };
@@ -626,7 +643,7 @@
         moveEntity(player, PLAYER_SPEED);
         ghosts.forEach(ghost => {
           maybeTurnGhost(ghost);
-          moveEntity(ghost, GHOST_SPEED + Math.min(level - 1, 4) * 0.25);
+          moveGhost(ghost, GHOST_SPEED + Math.min(level - 1, 4) * 0.25);
         });
         eatDots();
         checkGhostCollisions();
